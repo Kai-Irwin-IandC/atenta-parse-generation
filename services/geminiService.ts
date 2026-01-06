@@ -15,26 +15,21 @@ export const generateSignageSimulation = async (
   
   const sizeText = size === SignageSize.INCH_25 ? "25-inch" : "32-inch";
   
-  // プロンプトを強化: 白紙の領域＝モニターの領域であることを厳密に指定
+  // Simplifed prompt emphasizing exact boundary matching
   const prompt = `
-    Task: Precise Texture Replacement / Inpainting
-    Input Image: An elevator interior with a white paper sheet taped to the wall.
+    TASK: Replace the white paper sheet in the image with a digital signage display.
     
-    Objective: Replace the white paper sheet with a digital signage display.
+    CRITICAL SPATIAL REQUIREMENT:
+    - The digital signage panel MUST be the EXACT same size, position, and perspective as the white paper sheet.
+    - Align every corner PRECISELY with the corners of the white paper. 
+    - DO NOT extend beyond the boundaries of the paper.
     
-    CRITICAL GEOMETRY INSTRUCTIONS:
-    1. BOUNDARY MATCHING: The digital display must be generated EXACTLY within the boundaries of the white paper. 
-    2. CORNER ALIGNMENT: The corners of the digital display must align PRECISELY with the corners of the white paper.
-    3. NO RESIZING: Do not change the scale. The white paper represents the actual physical size of the screen (${sizeText}).
-    4. PERSPECTIVE: The display must follow the exact surface plane and perspective distortion of the existing paper.
+    VISUAL SPECIFICATIONS:
+    - Content: A professional digital advertisement for "ATENTA" with a modern blue and white color scheme.
+    - Style: A high-quality LCD screen with a very thin black bezel.
+    - Realism: The screen must look like a glowing monitor that naturally reflects the elevator's lighting and environment.
     
-    VISUAL STYLE:
-    - Object: A professional, vertical LCD digital signage panel with a very thin black bezel.
-    - Screen Content: Display a corporate advertisement with the text "ATENTA" using a blue and white color scheme. The screen should look like a glowing LCD panel.
-    - Lighting: The display must interact realistically with the elevator's lighting (reflections on the screen, shadows on the wall).
-    - Surroundings: Do NOT modify the wall, handrails, or elevator doors. Only replace the paper.
-    
-    ${includeWiring ? "Wiring: Show a thin white wiring cover extending vertically from the top of the monitor to the ceiling." : "Wiring: No visible cables (concealed wiring)."}
+    ${includeWiring ? "Wiring: Show a thin white wiring cover extending vertically from the top of the monitor to the ceiling." : ""}
   `;
 
   try {
