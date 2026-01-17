@@ -67,23 +67,24 @@ export const generateSignageSimulation = async (
   };
 
   try {
-    // Generate 3 candidates with error handling for each
-    const promises = [
-      generateSingleImage(),
-      generateSingleImage(),
-      generateSingleImage()
-    ];
+    const successfulImages: string[] = [];
+    const errors: any[] = [];
 
-    const results = await Promise.allSettled(promises);
-    
-    const successfulImages = results
-      .filter((result): result is PromiseFulfilledResult<string> => result.status === 'fulfilled')
-      .map(result => result.value);
+    // Execute sequentially to avoid rate limits
+    for (let i = 0; i < 3; i++) {
+      try {
+        const image = await generateSingleImage();
+        successfulImages.push(image);
+      } catch (error) {
+        console.warn(`Generation attempt ${i + 1} failed:`, error);
+        errors.push(error);
+        // Continue to next attempt even if one fails
+      }
+    }
 
     if (successfulImages.length === 0) {
       // If all failed, throw the first error
-      const firstError = results.find((result): result is PromiseRejectedResult => result.status === 'rejected');
-      throw firstError?.reason || new Error("All image generations failed");
+      throw errors[0] || new Error("All image generations failed");
     }
 
     return successfulImages;
