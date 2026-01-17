@@ -52,13 +52,14 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
 
     try {
       // 画像生成のみ実行
-      const simulatedImage = await generateSignageSimulation(image, formData.size, false);
+      const simulatedImages = await generateSignageSimulation(image, formData.size, false);
       
       const newLead: InquiryLead = {
         id: Math.random().toString(36).substr(2, 9),
         ...formData,
         originalImage: image,
-        simulatedImage,
+        simulatedImage: simulatedImages[0],
+        simulatedImages: simulatedImages,
         emailContent: "", // メール生成機能は削除
         status: 'completed',
         createdAt: Date.now(),
@@ -71,6 +72,34 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
       console.error(error);
       alert("処理中にエラーが発生しました。もう一度お試しください。");
       setStep(1);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleRegenerate = async () => {
+    if (!lastSentLead) return;
+    
+    setIsProcessing(true);
+    setStep(2);
+
+    try {
+      const simulatedImages = await generateSignageSimulation(lastSentLead.originalImage, lastSentLead.size, false);
+      
+      const updatedLead: InquiryLead = {
+        ...lastSentLead,
+        simulatedImage: simulatedImages[0],
+        simulatedImages: simulatedImages,
+        createdAt: Date.now(),
+      };
+
+      setLastSentLead(updatedLead);
+      onInquirySubmitted(updatedLead);
+      setStep(3);
+    } catch (error) {
+      console.error(error);
+      alert("再生成中にエラーが発生しました。");
+      setStep(3);
     } finally {
       setIsProcessing(false);
     }
@@ -94,34 +123,59 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
   }
 
   if (step === 3 && lastSentLead) {
+    const images = lastSentLead.simulatedImages || (lastSentLead.simulatedImage ? [lastSentLead.simulatedImage] : []);
+
     return (
-      <div className="max-w-4xl mx-auto py-12 space-y-8 animate-in fade-in zoom-in duration-500">
+      <div className="max-w-6xl mx-auto py-12 space-y-12 animate-in fade-in zoom-in duration-500">
         <div className="text-center space-y-4">
           <div className="w-20 h-20 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto shadow-xl">
             <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
           </div>
           <h2 className="text-3xl font-bold text-slate-900">シミュレーション完了</h2>
           <p className="text-slate-500 text-lg">
-            設置イメージが生成されました。
+            3パターンの設置イメージを生成しました。
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-                <h4 className="font-bold text-slate-500 text-sm uppercase tracking-wider text-center">Before (現場写真)</h4>
-                <div className="rounded-xl overflow-hidden shadow-lg border-2 border-slate-200 aspect-[3/4] relative group">
+        <div className="space-y-8">
+            <div className="flex flex-col items-center space-y-4">
+                <h4 className="font-bold text-slate-500 text-sm uppercase tracking-wider">Before (現場写真)</h4>
+                <div className="w-64 rounded-xl overflow-hidden shadow-lg border-2 border-slate-200 aspect-[3/4] relative group">
                     <img src={lastSentLead.originalImage} className="w-full h-full object-cover grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500" />
                 </div>
             </div>
-            <div className="space-y-4">
-                <h4 className="font-bold text-blue-600 text-sm uppercase tracking-wider text-center">After (AIシミュレーション)</h4>
-                <div className="rounded-xl overflow-hidden shadow-xl border-4 border-blue-500 aspect-[3/4]">
-                    <img src={lastSentLead.simulatedImage} className="w-full h-full object-cover" />
+            
+            <div className="space-y-6">
+                <h4 className="font-bold text-blue-600 text-sm uppercase tracking-wider text-center">After (AIシミュレーション候補)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {images.map((img, idx) => (
+                        <div key={idx} className="space-y-4 flex flex-col">
+                            <div className="rounded-xl overflow-hidden shadow-xl border-4 border-blue-500 aspect-[3/4] bg-slate-100">
+                                <img src={img} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                            </div>
+                            <a 
+                                href={img} 
+                                download={`atenta_simulation_${idx + 1}.png`}
+                                className="w-full py-3 bg-white border-2 border-blue-100 text-blue-600 rounded-xl font-bold hover:bg-blue-50 hover:border-blue-200 transition-all flex items-center justify-center gap-2 shadow-sm"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                画像{idx + 1}を保存
+                            </a>
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>
 
-        <div className="flex justify-center pt-8">
+        <div className="flex justify-center gap-4 pt-8">
+          <button 
+            onClick={handleRegenerate}
+            className="px-8 py-3 bg-white text-slate-700 font-bold rounded-xl border-2 border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-all shadow-sm flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            再生成する
+          </button>
+
           <button 
             onClick={() => { setStep(1); setImage(null); setLastSentLead(null); setFormData(prev => ({...prev, buildingName: ''})); }}
             className="px-8 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-700 transition-all shadow-lg"

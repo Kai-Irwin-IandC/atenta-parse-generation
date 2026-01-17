@@ -9,7 +9,7 @@ export const generateSignageSimulation = async (
   base64Image: string,
   size: SignageSize,
   includeWiring: boolean
-): Promise<string> => {
+): Promise<string[]> => {
   // Create instance inside the function to ensure the latest API key is used
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
@@ -32,35 +32,64 @@ export const generateSignageSimulation = async (
     ${includeWiring ? "Wiring: Show a thin white wiring cover extending vertically from the top of the monitor to the ceiling." : ""}
   `;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
-      contents: {
-        parts: [
-          {
-            inlineData: {
-              data: base64Image.split(',')[1],
-              mimeType: 'image/jpeg',
+  const generateSingleImage = async (): Promise<string> => {
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-image-preview',
+        contents: {
+          parts: [
+            {
+              inlineData: {
+                data: base64Image.split(',')[1],
+                mimeType: 'image/jpeg',
+              },
             },
-          },
-          { text: prompt },
-        ],
-      },
-    });
+            { text: prompt },
+          ],
+        },
+      });
 
-    if (!response.candidates || response.candidates.length === 0) {
-      throw new Error("AIモデルからの応答がありません。");
+      if (!response.candidates || response.candidates.length === 0) {
+        throw new Error("AIモデルからの応答がありません。");
+      }
+
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData) {
+          return `data:image/png;base64,${part.inlineData.data}`;
+        }
+      }
+
+      throw new Error("応答に画像が含まれていません。");
+    } catch (error) {
+      console.error("Simulation generation error:", error);
+      throw error;
     }
+  };
 
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
+  try {
+    const successfulImages: string[] = [];
+    const errors: any[] = [];
+
+    // Execute sequentially to avoid rate limits
+    for (let i = 0; i < 3; i++) {
+      try {
+        const image = await generateSingleImage();
+        successfulImages.push(image);
+      } catch (error) {
+        console.warn(`Generation attempt ${i + 1} failed:`, error);
+        errors.push(error);
+        // Continue to next attempt even if one fails
       }
     }
 
-    throw new Error("応答に画像が含まれていません。");
+    if (successfulImages.length === 0) {
+      // If all failed, throw the first error
+      throw errors[0] || new Error("All image generations failed");
+    }
+
+    return successfulImages;
   } catch (error) {
-    console.error("Simulation generation error:", error);
+    console.error("Error generating multiple images:", error);
     throw error;
   }
 };
