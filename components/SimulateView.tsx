@@ -31,7 +31,7 @@ const SimulateView: React.FC<SimulateViewProps> = ({ onSimulationComplete }) => 
     setIsGenerating(true);
     setError(null);
     try {
-      const result = await generateSignageSimulation(image, size, includeWiring);
+      const results = await generateSignageSimulation(image, size, includeWiring);
       /* Fix: Ensure the project object matches the InquiryLead interface required by SimulationProject */
       const newProject: SimulationProject = {
         id: Math.random().toString(36).substr(2, 9),
@@ -39,7 +39,8 @@ const SimulateView: React.FC<SimulateViewProps> = ({ onSimulationComplete }) => 
         email: '-',
         buildingName: `シミュレーション_${new Date().toLocaleDateString('ja-JP')}`,
         originalImage: image,
-        simulatedImage: result,
+        simulatedImage: results[0],
+        simulatedImages: results,
         size,
         status: 'completed',
         createdAt: Date.now(),

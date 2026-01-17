@@ -9,7 +9,7 @@ export const generateSignageSimulation = async (
   base64Image: string,
   size: SignageSize,
   includeWiring: boolean
-): Promise<string> => {
+): Promise<string[]> => {
   // Create instance inside the function to ensure the latest API key is used
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
@@ -32,35 +32,50 @@ export const generateSignageSimulation = async (
     ${includeWiring ? "Wiring: Show a thin white wiring cover extending vertically from the top of the monitor to the ceiling." : ""}
   `;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
-      contents: {
-        parts: [
-          {
-            inlineData: {
-              data: base64Image.split(',')[1],
-              mimeType: 'image/jpeg',
+  const generateSingleImage = async (): Promise<string> => {
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-image-preview',
+        contents: {
+          parts: [
+            {
+              inlineData: {
+                data: base64Image.split(',')[1],
+                mimeType: 'image/jpeg',
+              },
             },
-          },
-          { text: prompt },
-        ],
-      },
-    });
+            { text: prompt },
+          ],
+        },
+      });
 
-    if (!response.candidates || response.candidates.length === 0) {
-      throw new Error("AIモデルからの応答がありません。");
-    }
-
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
+      if (!response.candidates || response.candidates.length === 0) {
+        throw new Error("AIモデルからの応答がありません。");
       }
-    }
 
-    throw new Error("応答に画像が含まれていません。");
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData) {
+          return `data:image/png;base64,${part.inlineData.data}`;
+        }
+      }
+
+      throw new Error("応答に画像が含まれていません。");
+    } catch (error) {
+      console.error("Simulation generation error:", error);
+      throw error;
+    }
+  };
+
+  try {
+    // Generate 3 candidates
+    const results = await Promise.all([
+      generateSingleImage(),
+      generateSingleImage(),
+      generateSingleImage()
+    ]);
+    return results;
   } catch (error) {
-    console.error("Simulation generation error:", error);
+    console.error("Error generating multiple images:", error);
     throw error;
   }
 };
