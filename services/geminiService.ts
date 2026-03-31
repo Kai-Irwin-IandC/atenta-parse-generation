@@ -25,8 +25,12 @@ export const generateSignageSimulation = async (
     - DO NOT extend beyond the boundaries of the paper.
     
     VISUAL SPECIFICATIONS:
-    - Content: A professional digital advertisement for "ATENTA" with a modern blue and white color scheme.
-    - Style: A high-quality LCD screen with a very thin black bezel.
+    - Display size: ${sizeText}.
+    - Content: A generic public-information screen suitable for many contexts.
+      Example content can include weather forecast, date/time, local news headlines, or transit/service updates.
+    - IMPORTANT: Do NOT include any brand names, company names, logos, or product names.
+      Specifically, do NOT render the text "ATENTA" anywhere on the signage.
+    - Style: A clean, modern, easy-to-read information layout on a high-quality LCD screen with a very thin black bezel.
     - Realism: The screen must look like a glowing monitor that naturally reflects the elevator's lighting and environment.
     
     ${includeWiring ? "Wiring: Show a thin white wiring cover extending vertically from the top of the monitor to the ceiling." : ""}
