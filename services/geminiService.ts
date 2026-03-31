@@ -25,7 +25,8 @@ export const generateSignageSimulation = async (
     - DO NOT extend beyond the boundaries of the paper.
     
     VISUAL SPECIFICATIONS:
-    - Content: A professional digital page for a weather forecast with a modern blue and white color scheme.
+    - Content: Gemini said
+A simple weather app screen with white cards on a blue-to-white gradient background. The top has "今日の天気" text in a Yu Gothic font and a large sun-and-cloud icon. Below this is the date "2026年10月26日 土曜日", the time "14:30", and a large current temperature of "23°C". Underneath are hourly forecasts for 15:00, 18:00, and 21:00 with specific sun and cloud icons, conditions, and temperatures. Lower down is a weekly forecast from Oct 27-31 in a card with daily icons and temperature ranges. At the bottom, a "最新ニュース" card lists three news items about an idol group, a baseball player, and a movie, with timestamps. All elements are clean, simple, and in a friendly nanobanana illustration style. All text is clearly rendered in a crisp Yu Gothic font.
     - Style: A high-quality LCD screen with a very thin black bezel.
     - Realism: The screen must look like a glowing monitor that naturally reflects the elevator's lighting and environment.
     
