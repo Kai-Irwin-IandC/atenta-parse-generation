@@ -65,3 +65,66 @@ export const generateSignageSimulation = async (
     throw error;
   }
 };
+
+/**
+ * 赤く塗られた領域を特定し、同じ位置・同じパースでサイネージに置き換えるシミュレーション画像を生成
+ */
+export const generateSignageSimulationFromMarkedArea = async (
+  base64Image: string,
+  size: SignageSize,
+  includeWiring: boolean
+): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const sizeText = size === SignageSize.INCH_25 ? "25-inch" : "32-inch";
+
+  const prompt = `
+    TASK: Replace the red highlighted quadrilateral area in the image with a digital signage display.
+
+    CRITICAL SPATIAL REQUIREMENT:
+    - The digital signage panel MUST be the EXACT same size, position, and perspective as the red highlighted area.
+    - Align every corner PRECISELY with the four corners of the red marked region.
+    - DO NOT extend beyond the red boundaries.
+    - Treat the red area as the installation target only.
+
+    VISUAL SPECIFICATIONS:
+    - Signage size: ${sizeText}.
+    - Content: A professional digital page for a weather forecast with a modern blue and white color scheme.
+    - Temperature unit: Use Celsius only (°C). Never use Fahrenheit (°F).
+    - Style: A high-quality LCD screen with a very thin black bezel.
+    - Realism: The screen must look like a glowing monitor that naturally reflects the surrounding lighting and environment.
+
+    ${includeWiring ? "Wiring: Show a thin white wiring cover extending vertically from the top of the monitor to the ceiling." : ""}
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-image-preview',
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              data: base64Image.split(',')[1],
+              mimeType: 'image/jpeg',
+            },
+          },
+          { text: prompt },
+        ],
+      },
+    });
+
+    if (!response.candidates || response.candidates.length === 0) {
+      throw new Error("AIモデルからの応答がありません。");
+    }
+
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData) {
+        return `data:image/png;base64,${part.inlineData.data}`;
+      }
+    }
+
+    throw new Error("応答に画像が含まれていません。");
+  } catch (error) {
+    console.error("Marked-area simulation generation error:", error);
+    throw error;
+  }
+};
