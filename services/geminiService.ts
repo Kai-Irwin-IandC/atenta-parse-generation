@@ -8,14 +8,21 @@ import { SignageSize } from "../types";
 export const generateSignageSimulation = async (
   base64Image: string,
   size: SignageSize,
-  includeWiring: boolean
+  includeWiring: boolean,
+  variationIndex = 0
 ): Promise<string> => {
   // Create instance inside the function to ensure the latest API key is used
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const sizeText = size === SignageSize.INCH_25 ? "25-inch" : "32-inch";
   
-  // Simplifed prompt emphasizing exact boundary matching
+  const variationText = [
+    "Layout variation style: Minimal clean weather dashboard.",
+    "Layout variation style: Card-based weather dashboard with slightly different icon placements.",
+    "Layout variation style: Editorial weather dashboard with a different hierarchy and chart arrangement.",
+  ][variationIndex] ?? "Layout variation style: Minimal clean weather dashboard.";
+
+  // Simplified prompt emphasizing exact boundary matching
   const prompt = `
     TASK: Replace the white paper sheet in the image with a digital signage display.
     
@@ -26,8 +33,10 @@ export const generateSignageSimulation = async (
     
     VISUAL SPECIFICATIONS:
     - Content: A professional digital page for a weather forecast with a modern blue and white color scheme.
+    - Temperature unit: Use Celsius only (°C). Never use Fahrenheit (°F).
     - Style: A high-quality LCD screen with a very thin black bezel.
     - Realism: The screen must look like a glowing monitor that naturally reflects the elevator's lighting and environment.
+    - ${variationText}
     
     ${includeWiring ? "Wiring: Show a thin white wiring cover extending vertically from the top of the monitor to the ceiling." : ""}
   `;

@@ -11,6 +11,7 @@ export interface InquiryLead {
   buildingName: string;
   originalImage: string;
   simulatedImage?: string;
+  simulatedImages?: string[];
   emailContent?: string; // 生成されたメール本文 (Deprecated)
   size: SignageSize;
   status: 'new' | 'processing' | 'sent' | 'completed';

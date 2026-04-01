@@ -9,6 +9,7 @@ interface InquiryFormProps {
 }
 
 const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
+  const TOTAL_VARIATIONS = 3;
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [formData, setFormData] = useState({
     customerName: '',
@@ -19,6 +20,17 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
   const [image, setImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastSentLead, setLastSentLead] = useState<InquiryLead | null>(null);
+  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  const [activeVariationIndex, setActiveVariationIndex] = useState(0);
+
+  const handleSaveImage = (imageDataUrl: string, variationNumber: number) => {
+    const link = document.createElement('a');
+    link.href = imageDataUrl;
+    link.download = `atenta-simulation-variation-${variationNumber}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -49,22 +61,31 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
 
     setIsProcessing(true);
     setStep(2);
+    setGeneratedImages([]);
+    setActiveVariationIndex(0);
 
     try {
-      // 画像生成のみ実行
-      const simulatedImage = await generateSignageSimulation(image, formData.size, false);
+      // 3パターンを順番に生成し、生成済み分を即時表示する
+      const variations: string[] = [];
+      for (let i = 0; i < TOTAL_VARIATIONS; i++) {
+        const simulatedImage = await generateSignageSimulation(image, formData.size, false, i);
+        variations.push(simulatedImage);
+        setGeneratedImages([...variations]);
+      }
       
       const newLead: InquiryLead = {
         id: Math.random().toString(36).substr(2, 9),
         ...formData,
         originalImage: image,
-        simulatedImage,
+        simulatedImage: variations[0],
+        simulatedImages: variations,
         emailContent: "", // メール生成機能は削除
         status: 'completed',
         createdAt: Date.now(),
       };
 
       setLastSentLead(newLead);
+      setActiveVariationIndex(0);
       onInquirySubmitted(newLead);
       setStep(3);
     } catch (error) {
@@ -79,13 +100,23 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
   if (step === 2) {
     return (
       <div className="max-w-xl mx-auto py-20 text-center space-y-8">
-        <div className="relative inline-block">
+        <div className="relative inline-block w-full">
           <div className="w-24 h-24 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
           <div className="mt-8 animate-pulse">
             <h2 className="text-2xl font-bold text-slate-900">AIが設置イメージを作成中...</h2>
-            <p className="text-slate-500 mt-2">壁面の白紙を解析し、実機パネルへ正確に置換しています。</p>
+            <p className="text-slate-500 mt-2">
+              壁面の白紙を解析し、実機パネルへ正確に置換しています。({generatedImages.length}/{TOTAL_VARIATIONS} 生成済み)
+            </p>
           </div>
         </div>
+        {generatedImages.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-sm font-bold text-blue-600">最新の生成結果（{generatedImages.length}/{TOTAL_VARIATIONS}）</p>
+            <div className="rounded-xl overflow-hidden shadow-xl border-4 border-blue-500 aspect-[3/4] max-w-sm mx-auto">
+              <img src={generatedImages[generatedImages.length - 1]} className="w-full h-full object-cover" />
+            </div>
+          </div>
+        )}
         <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 max-w-sm mx-auto">
           <p className="text-sm text-blue-800 font-medium italic">"ATENTA AI is digitizing your elevator hall..."</p>
         </div>
@@ -94,6 +125,11 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
   }
 
   if (step === 3 && lastSentLead) {
+    const allVariations = lastSentLead.simulatedImages?.length
+      ? lastSentLead.simulatedImages
+      : (lastSentLead.simulatedImage ? [lastSentLead.simulatedImage] : []);
+    const currentVariation = allVariations[activeVariationIndex] ?? allVariations[0];
+
     return (
       <div className="max-w-4xl mx-auto py-12 space-y-8 animate-in fade-in zoom-in duration-500">
         <div className="text-center space-y-4">
@@ -116,14 +152,46 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
             <div className="space-y-4">
                 <h4 className="font-bold text-blue-600 text-sm uppercase tracking-wider text-center">After (AIシミュレーション)</h4>
                 <div className="rounded-xl overflow-hidden shadow-xl border-4 border-blue-500 aspect-[3/4]">
-                    <img src={lastSentLead.simulatedImage} className="w-full h-full object-cover" />
+                    {currentVariation ? <img src={currentVariation} className="w-full h-full object-cover" /> : null}
                 </div>
             </div>
         </div>
 
-        <div className="flex justify-center pt-8">
+        {allVariations.length > 1 && (
+          <div className="flex flex-wrap gap-3 justify-center">
+            {allVariations.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveVariationIndex(idx)}
+                className={`px-5 py-2 rounded-full border font-bold text-sm transition-all ${
+                  idx === activeVariationIndex
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-slate-600 border-slate-300 hover:border-blue-400'
+                }`}
+              >
+                パターン {idx + 1}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="flex justify-center gap-4 pt-8 flex-wrap">
+          <button
+            onClick={() => currentVariation && handleSaveImage(currentVariation, activeVariationIndex + 1)}
+            disabled={!currentVariation}
+            className="px-8 py-3 bg-white text-slate-900 font-bold rounded-xl border border-slate-300 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
+          >
+            保存する
+          </button>
           <button 
-            onClick={() => { setStep(1); setImage(null); setLastSentLead(null); setFormData(prev => ({...prev, buildingName: ''})); }}
+            onClick={() => {
+              setStep(1);
+              setImage(null);
+              setLastSentLead(null);
+              setGeneratedImages([]);
+              setActiveVariationIndex(0);
+              setFormData(prev => ({...prev, buildingName: ''}));
+            }}
             className="px-8 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-700 transition-all shadow-lg"
           >
             別の物件をシミュレーションする
