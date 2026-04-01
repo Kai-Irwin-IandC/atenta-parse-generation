@@ -68,7 +68,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
       // 3パターンを順番に生成し、生成済み分を即時表示する
       const variations: string[] = [];
       for (let i = 0; i < TOTAL_VARIATIONS; i++) {
-        const simulatedImage = await generateSignageSimulation(image, formData.size, false, i);
+        const simulatedImage = await generateSignageSimulation(image, formData.size, false);
         variations.push(simulatedImage);
         setGeneratedImages([...variations]);
       }
