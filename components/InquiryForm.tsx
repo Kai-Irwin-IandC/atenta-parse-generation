@@ -441,21 +441,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  onClick={() => setFormData({ ...formData, size: SignageSize.INCH_25 })}
-                  className={`py-4 rounded-xl border-2 font-bold text-sm transition-all ${formData.size === SignageSize.INCH_25 ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md shadow-blue-500/10' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
-                >
-                  25インチ (小型)
-                </button>
-                <button
-                  onClick={() => setFormData({ ...formData, size: SignageSize.INCH_32 })}
-                  className={`py-4 rounded-xl border-2 font-bold text-sm transition-all ${formData.size === SignageSize.INCH_32 ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md shadow-blue-500/10' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
-                >
-                  32インチ (標準)
-                </button>
-              </div>
-
               <button
                 onClick={handleSubmit}
                 disabled={!image || isProcessing || noPaperPoints.length !== 4}
