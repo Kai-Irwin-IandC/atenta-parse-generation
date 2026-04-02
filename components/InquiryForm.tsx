@@ -12,6 +12,10 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
   const TOTAL_VARIATIONS = 3;
   type SimulationMode = 'paper' | 'no-paper';
   type NormalizedPoint = { x: number; y: number };
+  const SIZE_DIMENSIONS_MM: Record<SignageSize, { width: number; height: number }> = {
+    [SignageSize.INCH_25]: { width: 274.4, height: 612.7 },
+    [SignageSize.INCH_32]: { width: 422.6, height: 728.2 },
+  };
 
   const [mode, setMode] = useState<SimulationMode | null>(null);
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -68,6 +72,17 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
     const y = (e.clientY - rect.top) / rect.height;
     setNoPaperPoints((prev) => [...prev, { x, y }]);
     setNoPaperError(null);
+  };
+
+  const normalizeQuadPoints = (points: NormalizedPoint[]): NormalizedPoint[] => {
+    if (points.length !== 4) return points;
+
+    const sortedByY = [...points].sort((a, b) => a.y - b.y);
+    const topTwo = sortedByY.slice(0, 2).sort((a, b) => a.x - b.x);
+    const bottomTwo = sortedByY.slice(2).sort((a, b) => a.x - b.x);
+
+    // Always force a non-crossing winding order: top-left -> top-right -> bottom-right -> bottom-left
+    return [topTwo[0], topTwo[1], bottomTwo[1], bottomTwo[0]];
   };
 
   const createMarkedImage = async (baseImage: string, points: NormalizedPoint[]): Promise<string> => {
@@ -139,7 +154,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
 
     try {
       const generationSourceImage =
-        mode === 'no-paper' ? await createMarkedImage(image, noPaperPoints) : image;
+        mode === 'no-paper' ? await createMarkedImage(image, normalizeQuadPoints(noPaperPoints)) : image;
 
       // 3パターンを順番に生成し、生成済み分を即時表示する
       const variations: string[] = [];
@@ -387,6 +402,11 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">現場写真（白紙なし）</label>
                   <span className="text-[10px] text-blue-500 font-bold uppercase underline">4点を指定してください</span>
                 </div>
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+                  <p className="text-[11px] leading-relaxed text-amber-800">
+                    点は <span className="font-bold">左上 → 右上 → 右下 → 左下</span> の順で指定してください。生成時は内部でこの順に補正し、交差した形にならないよう処理します。
+                  </p>
+                </div>
                 {!image ? (
                   <div className="border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all bg-slate-50 cursor-pointer group">
                     <input type="file" id="photo-no-paper" className="hidden" accept="image/*" onChange={handleFileChange} />
@@ -425,7 +445,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
                     </div>
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                       <p className="text-xs text-slate-500">
-                        画像上をクリックして4点を指定してください。現在: <span className="font-bold text-slate-900">{noPaperPoints.length}/4点</span>
+                        画像上をクリックして4点を指定してください（推奨: 左上 → 右上 → 右下 → 左下）。現在: <span className="font-bold text-slate-900">{noPaperPoints.length}/4点</span>
                       </p>
                       <button
                         onClick={() => setNoPaperPoints([])}
@@ -552,12 +572,18 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
                 className={`py-4 rounded-xl border-2 font-bold text-sm transition-all ${formData.size === SignageSize.INCH_25 ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md shadow-blue-500/10' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
               >
                 25インチ (小型)
+                <span className="block text-[10px] font-medium opacity-80 mt-1">
+                  縦{SIZE_DIMENSIONS_MM[SignageSize.INCH_25].height} x 横{SIZE_DIMENSIONS_MM[SignageSize.INCH_25].width}mm
+                </span>
               </button>
               <button
                 onClick={() => setFormData({...formData, size: SignageSize.INCH_32})}
                 className={`py-4 rounded-xl border-2 font-bold text-sm transition-all ${formData.size === SignageSize.INCH_32 ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md shadow-blue-500/10' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
               >
                 32インチ (標準)
+                <span className="block text-[10px] font-medium opacity-80 mt-1">
+                  縦{SIZE_DIMENSIONS_MM[SignageSize.INCH_32].height} x 横{SIZE_DIMENSIONS_MM[SignageSize.INCH_32].width}mm
+                </span>
               </button>
             </div>
 

@@ -2,6 +2,24 @@
 import { GoogleGenAI } from "@google/genai";
 import { SignageSize } from "../types";
 
+const getSignageSpec = (size: SignageSize) => {
+  if (size === SignageSize.INCH_25) {
+    return {
+      sizeText: "25-inch",
+      widthMm: 274.4,
+      heightMm: 612.7,
+      ratioText: "274.4:612.7 (W:H, portrait)",
+    };
+  }
+
+  return {
+    sizeText: "32-inch",
+    widthMm: 422.6,
+    heightMm: 728.2,
+    ratioText: "422.6:728.2 (W:H, portrait)",
+  };
+};
+
 /**
  * 白紙部分を特定し、正確なサイズとパースで広告パネルに置き換えるシミュレーション画像を生成
  */
@@ -12,17 +30,22 @@ export const generateSignageSimulation = async (
 ): Promise<string> => {
   // Create instance inside the function to ensure the latest API key is used
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
-  const sizeText = size === SignageSize.INCH_25 ? "25-inch" : "32-inch";
+  const signageSpec = getSignageSpec(size);
   
   // Simplified prompt emphasizing exact boundary matching
   const prompt = `
     TASK: Replace the white paper sheet in the image with a digital signage display.
     
     CRITICAL SPATIAL REQUIREMENT:
-    - The digital signage panel MUST be the EXACT same size, position, and perspective as the white paper sheet.
-    - Align every corner PRECISELY with the corners of the white paper. 
-    - DO NOT extend beyond the boundaries of the paper.
+    - Keep the panel on the same wall plane and perspective as the white paper sheet.
+    - The panel must remain fully inside the white paper boundaries (never overflow).
+    - Preserve the selected physical aspect ratio exactly for the panel content and bezel.
+    - If the paper shape and signage ratio differ, center-fit the panel within the paper with minimal margin.
+    
+    SIGNAGE SIZE SPEC (STRICT):
+    - Selected size: ${signageSpec.sizeText}.
+    - Physical dimensions: ${signageSpec.widthMm}mm (W) x ${signageSpec.heightMm}mm (H).
+    - Aspect ratio to preserve: ${signageSpec.ratioText}.
     
     VISUAL SPECIFICATIONS:
     - Content: A professional digital page for a weather forecast with a modern blue and white color scheme.
@@ -78,7 +101,7 @@ export const generateSignageSimulationFromMarkedArea = async (
   includeWiring: boolean
 ): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const sizeText = size === SignageSize.INCH_25 ? "25-inch" : "32-inch";
+  const signageSpec = getSignageSpec(size);
 
   const prompt = `
     TASK: Replace the red highlighted quadrilateral area in the image with a digital signage display.
@@ -90,7 +113,9 @@ export const generateSignageSimulationFromMarkedArea = async (
     - Treat the red area as the installation target only.
 
     VISUAL SPECIFICATIONS:
-    - Signage size: ${sizeText}.
+    - Signage size: ${signageSpec.sizeText}.
+    - Physical dimensions: ${signageSpec.widthMm}mm (W) x ${signageSpec.heightMm}mm (H).
+    - Aspect ratio to preserve: ${signageSpec.ratioText}.
     - Content: A professional digital page for a weather forecast with a modern blue and white color scheme.
     - Temperature unit: Use Celsius only (°C). Never use Fahrenheit (°F).
     - Style: A high-quality LCD screen with a very thin black bezel.
