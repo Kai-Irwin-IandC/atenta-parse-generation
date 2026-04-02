@@ -58,7 +58,7 @@ export const generateSignageSimulation = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
+      model: 'gemini-3.1-flash-image-preview',
       config: {
         temperature: 0.5,
       },
@@ -126,7 +126,7 @@ export const generateSignageSimulationFromMarkedArea = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
+      model: 'gemini-3.1-flash-image-preview',
       config: {
         temperature: 0.5,
       },
