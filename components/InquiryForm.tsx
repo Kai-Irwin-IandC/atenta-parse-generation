@@ -9,7 +9,7 @@ interface InquiryFormProps {
 }
 
 const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
-  const TOTAL_VARIATIONS = 3;
+  const TOTAL_VARIATIONS = 4;
   type SimulationMode = 'paper' | 'no-paper';
   type NormalizedPoint = { x: number; y: number };
   const SIZE_DIMENSIONS_MM: Record<SignageSize, { width: number; height: number }> = {
@@ -156,7 +156,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ onInquirySubmitted }) => {
       const generationSourceImage =
         mode === 'no-paper' ? await createMarkedImage(image, normalizeQuadPoints(noPaperPoints)) : image;
 
-      // 3パターンを順番に生成し、生成済み分を即時表示する
+      // 4パターンを順番に生成し、生成済み分を即時表示する
       const variations: string[] = [];
       for (let i = 0; i < TOTAL_VARIATIONS; i++) {
         const simulatedImage = mode === 'no-paper'
